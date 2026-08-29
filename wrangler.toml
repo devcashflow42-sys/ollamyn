@@ -1,0 +1,16 @@
+# ============================================================================
+# ollamyn - Configuración de Cloudflare Pages (Functions + Neon)
+#
+# Este archivo le dice a Cloudflare Pages:
+#   - dónde está el sitio estático (public/)  -> soluciona el error
+#     "Output directory not found"
+#   - que habilite compatibilidad con Node (necesario para el driver de Neon)
+#
+# Las claves/secretos NO van aquí: se configuran en el panel de Cloudflare
+# (Settings -> Environment variables) o con "wrangler pages secret put".
+# ============================================================================
+
+name = "ollamyn"
+compatibility_date = "2024-11-06"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "public"

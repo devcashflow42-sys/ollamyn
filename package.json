@@ -14,6 +14,7 @@
     "build": "prisma generate && tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
+    "typecheck:functions": "tsc -p functions/tsconfig.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
@@ -24,6 +25,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -31,6 +33,7 @@
     "express": "^4.21.1",
     "helmet": "^8.0.0",
     "ioredis": "^5.4.1",
+    "jose": "^5.9.6",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.0",
     "pino": "^9.5.0",
@@ -41,6 +44,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241106.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",

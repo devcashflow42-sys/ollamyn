@@ -136,11 +136,22 @@ npx prisma migrate deploy
 
 ---
 
-## Despliegue en Fly.io
+## Dos formas de desplegar
 
-> ⚠️ ollamyn es un **servidor Node.js**, no un sitio estático. **No** se puede
-> desplegar en Cloudflare Pages, GitHub Pages, Netlify ni Vercel (static). Usa un
-> host que ejecute procesos Node + PostgreSQL, como Fly.io.
+ollamyn se puede desplegar de **dos maneras** según lo que prefieras:
+
+| Opción | Runtime | Base de datos | Guía |
+|---|---|---|---|
+| **A) Cloudflare Pages** (edge/serverless) | Workers, carpeta `functions/` | **Neon** | [`docs/cloudflare-pages.md`](docs/cloudflare-pages.md) |
+| **B) Servidor Node.js** (Express, `src/`) | Node | Cualquier PostgreSQL | Fly.io (abajo), Railway, Render, VPS |
+
+> La opción A corre en el runtime de **Cloudflare Workers** (no Node), por eso
+> usa `jose`, WebCrypto y el driver serverless de Neon. La opción B es el
+> servidor Express tradicional. Elige una; ambas comparten el mismo contrato de API.
+
+---
+
+## Despliegue en Fly.io (opción B)
 
 El repositorio ya incluye `fly.toml` y un `Dockerfile` compatible con Prisma.
 

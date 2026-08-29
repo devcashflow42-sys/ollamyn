@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ollamyn API</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+           font: 16px/1.6 system-ui, sans-serif; background: #0b0d12; color: #e7e9ee; }
+    main { max-width: 640px; padding: 2rem; }
+    h1 { font-size: 2rem; margin: 0 0 .25rem; }
+    .tag { color: #8b94a7; margin: 0 0 1.5rem; }
+    code { background: #171a22; padding: .15em .4em; border-radius: 6px; }
+    a { color: #6ea8fe; }
+    ul { padding-left: 1.1rem; }
+    .ok { color: #38d39f; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>ollamyn API <span class="ok" id="status">•</span></h1>
+    <p class="tag">API multi-proveedor de IA, corriendo en Cloudflare Pages Functions.</p>
+    <p>Esta es la superficie pública. La API vive bajo <code>/api/v1</code>.</p>
+    <ul>
+      <li><a href="/health">/health</a> — estado del servicio</li>
+      <li><code>POST /api/v1/auth/register</code> — crear cuenta</li>
+      <li><code>POST /api/v1/auth/login</code> — iniciar sesión</li>
+      <li><code>GET /api/v1/models</code> — modelos disponibles</li>
+      <li><code>POST /api/v1/chat/completions</code> — hablar con la IA (streaming)</li>
+    </ul>
+    <p class="tag">© ollamyn</p>
+  </main>
+  <script>
+    fetch('/health').then(r => r.json()).then(d => {
+      document.getElementById('status').textContent = d.status === 'ok' ? '● en línea' : '● degradado';
+    }).catch(() => { document.getElementById('status').textContent = '● sin conexión'; });
+  </script>
+</body>
+</html>
