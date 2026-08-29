@@ -2,6 +2,8 @@ import type { AIProvider } from './provider.interface';
 import type { AIRequest, AIResponse, AIStreamChunk } from '../../types';
 import { providerError } from '../../utils/errors';
 import { logger } from '../../config/logger';
+import { env } from '../../config/env';
+import { withTimeout } from '../../utils/signals';
 
 interface OpenAICompatibleOptions {
   name: string;
@@ -15,6 +17,10 @@ interface OpenAICompatibleOptions {
  * Proveedor genérico para cualquier API compatible con OpenAI Chat Completions.
  * Reutilizado por OpenAI, NVIDIA NIM y servidores locales (Ollama, vLLM, TGI),
  * ya que todos comparten el mismo contrato `/chat/completions`.
+ *
+ * Los parámetros de muestreo (temperature, max_tokens) solo se envían cuando el
+ * modelo los define en su `config`: los modelos de razonamiento más recientes
+ * (p. ej. la familia GPT-5) rechazan `temperature` con un error 400.
  */
 export class OpenAICompatibleProvider implements AIProvider {
   public readonly name: string;
@@ -39,23 +45,29 @@ export class OpenAICompatibleProvider implements AIProvider {
     return headers;
   }
 
+  protected buildBody(request: AIRequest, stream: boolean): Record<string, unknown> {
+    const body: Record<string, unknown> = {
+      model: request.providerModel,
+      messages: request.messages,
+      stream,
+    };
+    if (typeof request.temperature === 'number') body.temperature = request.temperature;
+    if (typeof request.maxTokens === 'number') body.max_tokens = request.maxTokens;
+    if (stream && this.supportsStreamUsage) {
+      body.stream_options = { include_usage: true };
+    }
+    return body;
+  }
+
   async generate(request: AIRequest): Promise<AIResponse> {
     const res = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: this.headers(),
-      body: JSON.stringify({
-        model: request.providerModel,
-        messages: request.messages,
-        temperature: request.temperature ?? 0.7,
-        max_tokens: request.maxTokens,
-        stream: false,
-      }),
-      signal: request.signal,
+      body: JSON.stringify(this.buildBody(request, false)),
+      signal: withTimeout(request.signal, env.AI_REQUEST_TIMEOUT_MS),
     });
 
-    if (!res.ok) {
-      await this.throwFromResponse(res);
-    }
+    if (!res.ok) await this.throwFromResponse(res);
 
     const json = (await res.json()) as {
       choices?: { message?: { content?: string } }[];
@@ -70,27 +82,14 @@ export class OpenAICompatibleProvider implements AIProvider {
   }
 
   async *stream(request: AIRequest): AsyncIterable<AIStreamChunk> {
-    const body: Record<string, unknown> = {
-      model: request.providerModel,
-      messages: request.messages,
-      temperature: request.temperature ?? 0.7,
-      max_tokens: request.maxTokens,
-      stream: true,
-    };
-    if (this.supportsStreamUsage) {
-      body.stream_options = { include_usage: true };
-    }
-
     const res = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: this.headers(),
-      body: JSON.stringify(body),
+      body: JSON.stringify(this.buildBody(request, true)),
       signal: request.signal,
     });
 
-    if (!res.ok || !res.body) {
-      await this.throwFromResponse(res);
-    }
+    if (!res.ok || !res.body) await this.throwFromResponse(res);
 
     const reader = (res.body as ReadableStream<Uint8Array>).getReader();
     const decoder = new TextDecoder();
@@ -116,9 +115,21 @@ export class OpenAICompatibleProvider implements AIProvider {
           try {
             const parsed = JSON.parse(data) as {
               choices?: { delta?: { content?: string } }[];
+              usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
             };
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) yield { delta, done: false };
+            // El chunk final de OpenAI/NVIDIA trae el consumo real de tokens.
+            if (parsed.usage) {
+              yield {
+                delta: '',
+                done: false,
+                usage: {
+                  inputTokens: parsed.usage.prompt_tokens ?? 0,
+                  outputTokens: parsed.usage.completion_tokens ?? 0,
+                },
+              };
+            }
           } catch {
             // Fragmento SSE incompleto: se ignora y se reintenta con el buffer
           }
@@ -131,16 +142,25 @@ export class OpenAICompatibleProvider implements AIProvider {
   }
 
   private async throwFromResponse(res: Response): Promise<never> {
-    let detail = `${res.status} ${res.statusText}`;
+    const message = await extractProviderError(res);
+    logger.error({ provider: this.name, status: res.status, detail: message }, 'Error del proveedor de IA');
+    throw providerError(`El proveedor de IA (${this.name}) devolvió un error`, { status: res.status });
+  }
+}
+
+/** Extrae un mensaje de error legible del cuerpo de una respuesta de proveedor. */
+export async function extractProviderError(res: Response): Promise<string> {
+  try {
+    const text = await res.text();
     try {
-      const text = await res.text();
-      detail = text.slice(0, 500);
+      const json = JSON.parse(text) as { error?: { message?: string } | string };
+      if (typeof json.error === 'string') return json.error;
+      if (json.error?.message) return json.error.message;
     } catch {
-      // ignorar
+      // no era JSON
     }
-    logger.error({ provider: this.name, status: res.status, detail }, 'Error del proveedor de IA');
-    throw providerError(`El proveedor de IA (${this.name}) devolvió un error`, {
-      status: res.status,
-    });
+    return text.slice(0, 500) || `${res.status} ${res.statusText}`;
+  } catch {
+    return `${res.status} ${res.statusText}`;
   }
 }

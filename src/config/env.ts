@@ -51,6 +51,9 @@ const envSchema = z.object({
   LOCAL_AI_BASE_URL: z.string().default('http://localhost:11434/v1'),
   LOCAL_AI_API_KEY: z.string().optional().default(''),
 
+  // Tiempo máximo (ms) para una respuesta NO en streaming de un proveedor de IA.
+  AI_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
+
   SEED_ADMIN_EMAIL: z.string().email().default('admin@ollamyn.com'),
   SEED_ADMIN_USERNAME: z.string().default('admin'),
   SEED_ADMIN_PASSWORD: z.string().default('ChangeMe123!'),

@@ -105,18 +105,21 @@ export const completionController = {
       write({ type: 'meta', chatId: chat.id, model: aiModel.slug });
 
       let fullContent = '';
+      let reportedUsage: { inputTokens: number; outputTokens: number } | undefined;
       try {
         for await (const chunk of aiService.stream(aiModel, contextMessages, abortController.signal)) {
           if (chunk.delta) {
             fullContent += chunk.delta;
             write({ type: 'delta', delta: chunk.delta });
           }
+          if (chunk.usage) reportedUsage = chunk.usage;
           if (chunk.done) break;
         }
 
         const latencyMs = Date.now() - startedAt;
-        const inputTokens = estimateMessagesTokens(contextMessages);
-        const outputTokens = estimateTokens(fullContent);
+        // Usa el consumo real del proveedor si lo reportó; si no, lo estima.
+        const inputTokens = reportedUsage?.inputTokens || estimateMessagesTokens(contextMessages);
+        const outputTokens = reportedUsage?.outputTokens || estimateTokens(fullContent);
         finished = true;
 
         await completionService.persistAssistant({
@@ -149,8 +152,8 @@ export const completionController = {
             model: aiModel,
             userId: user.id,
             content: fullContent,
-            inputTokens: estimateMessagesTokens(contextMessages),
-            outputTokens: estimateTokens(fullContent),
+            inputTokens: reportedUsage?.inputTokens || estimateMessagesTokens(contextMessages),
+            outputTokens: reportedUsage?.outputTokens || estimateTokens(fullContent),
             latencyMs,
             status: 'canceled',
           });

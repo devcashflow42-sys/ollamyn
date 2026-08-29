@@ -38,6 +38,10 @@ async function main(): Promise<void> {
   });
   console.log(`✔ Administrador listo: ${admin.email}`);
 
+  // IDs de proveedor actualizados (agosto 2026). Son editables: para cambiar
+  // qué modelo real usa un slug, actualiza `providerModel` (o `provider`) aquí
+  // o directamente en la base de datos. Verifica el catálogo vigente de cada
+  // proveedor, ya que los nombres de modelo cambian con frecuencia.
   const models = [
     {
       slug: 'ollamyn-fast',
@@ -52,9 +56,9 @@ async function main(): Promise<void> {
       slug: 'ollamyn-pro',
       name: 'ollamyn Pro',
       provider: 'openai',
-      providerModel: 'gpt-4o-mini',
+      providerModel: 'gpt-5.2',
       description: 'Modelo equilibrado de propósito general.',
-      contextWindow: 128_000,
+      contextWindow: 400_000,
       supportsFiles: true,
       supportsStreaming: true,
     },
@@ -62,9 +66,9 @@ async function main(): Promise<void> {
       slug: 'ollamyn-reasoning',
       name: 'ollamyn Reasoning',
       provider: 'anthropic',
-      providerModel: 'claude-3-5-sonnet-latest',
+      providerModel: 'claude-opus-5',
       description: 'Optimizado para razonamiento complejo y análisis.',
-      contextWindow: 200_000,
+      contextWindow: 1_000_000,
       supportsFiles: true,
       supportsStreaming: true,
     },
@@ -72,7 +76,7 @@ async function main(): Promise<void> {
       slug: 'ollamyn-vision',
       name: 'ollamyn Vision',
       provider: 'google',
-      providerModel: 'gemini-1.5-flash',
+      providerModel: 'gemini-2.5-flash',
       description: 'Comprensión multimodal de texto e imágenes.',
       contextWindow: 1_000_000,
       supportsImages: true,
@@ -118,6 +122,17 @@ async function main(): Promise<void> {
       },
     });
     console.log(`✔ Modelo listo: ${m.slug} → ${m.provider}`);
+  }
+
+  // Elimina modelos antiguos que ya no forman parte del catálogo.
+  // Las referencias en chats/mensajes/uso quedan a NULL (onDelete: SetNull),
+  // así que no se borra ninguna conversación.
+  const currentSlugs = models.map((m) => m.slug);
+  const removed = await prisma.aiModel.deleteMany({
+    where: { slug: { notIn: currentSlugs } },
+  });
+  if (removed.count > 0) {
+    console.log(`✔ Modelos antiguos eliminados: ${removed.count}`);
   }
 
   console.log('\nSemilla completada. Inicia sesión como admin y prueba "ollamyn-local".');

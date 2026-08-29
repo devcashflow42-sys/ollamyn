@@ -39,10 +39,18 @@ export interface AIRequest {
   signal?: AbortSignal;
 }
 
+/** Consumo de tokens reportado por un proveedor. */
+export interface AIUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 /** Fragmento emitido durante el streaming de una respuesta de IA. */
 export interface AIStreamChunk {
   delta: string;
   done: boolean;
+  /** Presente cuando el proveedor reporta consumo real (p. ej. chunk final). */
+  usage?: AIUsage;
 }
 
 /** Respuesta completa (no streaming) de un proveedor de IA. */
