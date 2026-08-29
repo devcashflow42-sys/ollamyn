@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment / secrets — NUNCA subir claves
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Uploads locales (storage de desarrollo)
+uploads/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+coverage/
+.tmp/
