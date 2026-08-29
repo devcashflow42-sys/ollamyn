@@ -1,12 +1,16 @@
 # ============================================================================
-# ollamyn API - Dockerfile multi-stage
+# ollamyn API - Dockerfile multi-stage (Debian slim para compatibilidad Prisma)
 # ============================================================================
 
 # --- Stage 1: build ---
-FROM node:22-alpine AS builder
+FROM node:22-slim AS builder
 WORKDIR /app
 
-# Instalar dependencias (incluidas devDependencies para compilar)
+# openssl es necesario para que Prisma genere/ejecute su motor de consultas
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar dependencias (incluidas devDependencies para compilar TypeScript)
 COPY package.json package-lock.json* ./
 RUN npm install
 
@@ -18,11 +22,14 @@ RUN npx prisma generate
 RUN npm run build
 
 # --- Stage 2: runtime ---
-FROM node:22-alpine AS runner
+FROM node:22-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Solo dependencias de producción
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Solo dependencias de producción (incluye prisma CLI y tsx para migraciones/seed)
 COPY package.json package-lock.json* ./
 RUN npm install --omit=dev && npm cache clean --force
 
@@ -33,11 +40,12 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Usuario sin privilegios
-RUN addgroup -S ollamyn && adduser -S ollamyn -G ollamyn \
+RUN groupadd -r ollamyn && useradd -r -g ollamyn ollamyn \
     && mkdir -p /app/uploads && chown -R ollamyn:ollamyn /app
 USER ollamyn
 
 EXPOSE 3000
 
-# Aplica migraciones pendientes y arranca el servidor
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+# Las migraciones se ejecutan por separado (release_command en Fly, o el
+# `command` de docker-compose). Aquí solo arranca el servidor.
+CMD ["node", "dist/server.js"]

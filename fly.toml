@@ -1,0 +1,46 @@
+# ============================================================================
+# ollamyn API - Configuración de despliegue en Fly.io
+#
+#   fly launch --no-deploy   # crea la app usando este archivo y el Dockerfile
+#   fly postgres create      # crea la base de datos
+#   fly postgres attach <db> # inyecta DATABASE_URL automáticamente
+#   fly secrets set ...       # secretos (JWT, claves de IA)
+#   fly deploy                # despliega
+#
+# Cambia `app` por un nombre único tuyo y `primary_region` por tu región.
+# Regiones: https://fly.io/docs/reference/regions/  (mia=Miami, scl=Santiago, ...)
+# ============================================================================
+
+app = "ollamyn-api"
+primary_region = "mia"
+
+[build]
+  dockerfile = "Dockerfile"
+
+# Aplica las migraciones de Prisma ANTES de activar la nueva versión.
+# Si una migración falla, el despliegue se aborta (más seguro).
+[deploy]
+  release_command = "npx prisma migrate deploy"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+  HOST = "0.0.0.0"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    path = "/health"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

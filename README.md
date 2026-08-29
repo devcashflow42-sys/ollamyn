@@ -136,6 +136,75 @@ npx prisma migrate deploy
 
 ---
 
+## Despliegue en Fly.io
+
+> ⚠️ ollamyn es un **servidor Node.js**, no un sitio estático. **No** se puede
+> desplegar en Cloudflare Pages, GitHub Pages, Netlify ni Vercel (static). Usa un
+> host que ejecute procesos Node + PostgreSQL, como Fly.io.
+
+El repositorio ya incluye `fly.toml` y un `Dockerfile` compatible con Prisma.
+
+**1. Instala flyctl e inicia sesión**
+
+```bash
+# macOS/Linux:
+curl -L https://fly.io/install.sh | sh
+# Windows (PowerShell): iwr https://fly.io/install.ps1 -useb | iex
+fly auth signup   # o: fly auth login
+```
+
+**2. Crea la app** (edita `app` en `fly.toml` por un nombre único tuyo)
+
+```bash
+fly launch --no-deploy --copy-config
+```
+
+**3. Crea y conecta PostgreSQL** (inyecta `DATABASE_URL` automáticamente)
+
+```bash
+fly postgres create --name ollamyn-db
+fly postgres attach ollamyn-db
+```
+
+**4. Configura los secretos** (genera los JWT con `openssl rand -hex 48`)
+
+```bash
+fly secrets set \
+  JWT_SECRET="<secreto-1>" \
+  JWT_REFRESH_SECRET="<secreto-2>" \
+  CORS_ORIGINS="https://tu-frontend.com" \
+  SEED_ADMIN_PASSWORD="<contraseña-admin-fuerte>"
+
+# Claves de IA (opcionales; ollamyn-local funciona sin ninguna):
+fly secrets set OPENAI_API_KEY="..." NVIDIA_API_KEY="..." \
+  ANTHROPIC_API_KEY="..." GOOGLE_API_KEY="..."
+```
+
+**5. Despliega** (las migraciones se aplican solas vía `release_command`)
+
+```bash
+fly deploy
+```
+
+**6. Carga el administrador y los modelos** (una sola vez)
+
+```bash
+fly ssh console -C "npm run db:seed"
+```
+
+**7. Verifica**
+
+```bash
+fly open            # abre https://<tu-app>.fly.dev
+# Comprueba:  /health   y   /docs   (Swagger)
+fly logs            # ver logs en vivo
+```
+
+La app queda en `https://<tu-app>.fly.dev/api/v1/`. Para tu propio dominio:
+`fly certs add api.ollamyn.com` y apunta el DNS según las instrucciones.
+
+---
+
 ## Variables de entorno
 
 Todas las claves viven **exclusivamente** en `.env` (nunca en el código ni en el
