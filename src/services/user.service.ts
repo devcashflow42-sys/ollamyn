@@ -106,4 +106,14 @@ export const userService = {
     }
     return updated;
   },
+
+  async adminDeleteUser(id: string): Promise<PublicUser> {
+    await this.getById(id); // asegura existencia
+    const deleted = await userRepository.softDelete(id);
+    await prisma.refreshToken.updateMany({
+      where: { userId: id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    return deleted;
+  },
 };

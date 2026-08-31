@@ -14,7 +14,7 @@ export const openapiSpec = {
       'y otros clientes se comunican exclusivamente con esta API, sin conocer qué ' +
       'proveedor real (OpenAI, NVIDIA, Anthropic, Google, local...) atiende cada modelo.',
   },
-  servers: [{ url: `${env.PUBLIC_API_URL}/api/v1`, description: 'API v1' }],
+  servers: [{ url: `${env.PUBLIC_API_URL}/api`, description: 'ollamyn API' }],
   tags: [
     { name: 'Auth', description: 'Registro, inicio de sesión y tokens' },
     { name: 'Users', description: 'Perfil del usuario autenticado' },
@@ -113,7 +113,7 @@ export const openapiSpec = {
   },
   security: [{ bearerAuth: [] }],
   paths: {
-    '/auth/register': {
+    '/register': {
       post: {
         tags: ['Auth'],
         summary: 'Registrar un usuario',
@@ -141,7 +141,7 @@ export const openapiSpec = {
         },
       },
     },
-    '/auth/login': {
+    '/login': {
       post: {
         tags: ['Auth'],
         summary: 'Iniciar sesión',
@@ -167,7 +167,7 @@ export const openapiSpec = {
         },
       },
     },
-    '/auth/refresh': {
+    '/refresh': {
       post: {
         tags: ['Auth'],
         summary: 'Renovar tokens',
@@ -187,15 +187,23 @@ export const openapiSpec = {
         responses: { '200': { description: 'Nuevos tokens' }, '401': { $ref: '#/components/responses/Unauthorized' } },
       },
     },
-    '/auth/me': {
-      get: {
+    '/logout': {
+      post: {
         tags: ['Auth'],
-        summary: 'Usuario autenticado actual',
-        responses: { '200': { description: 'Perfil' }, '401': { $ref: '#/components/responses/Unauthorized' } },
+        summary: 'Cerrar sesión (revoca el refresh token)',
+        security: [],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: { type: 'object', properties: { refreshToken: { type: 'string' } } },
+            },
+          },
+        },
+        responses: { '200': { description: 'Sesión cerrada' } },
       },
     },
-    '/users/me': {
-      get: { tags: ['Users'], summary: 'Ver mi perfil', responses: { '200': { description: 'Perfil' } } },
+    '/me': {
+      get: { tags: ['Users'], summary: 'Ver mi perfil', responses: { '200': { description: 'Perfil' }, '401': { $ref: '#/components/responses/Unauthorized' } } },
       patch: {
         tags: ['Users'],
         summary: 'Actualizar mi perfil',
@@ -212,6 +220,33 @@ export const openapiSpec = {
         responses: { '200': { description: 'Actualizado' } },
       },
       delete: { tags: ['Users'], summary: 'Eliminar mi cuenta', responses: { '200': { description: 'Eliminada' } } },
+    },
+    '/users': {
+      get: {
+        tags: ['Users'],
+        summary: 'Listar usuarios (admin)',
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer' } },
+          { name: 'pageSize', in: 'query', schema: { type: 'integer' } },
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['active', 'suspended', 'deleted'] } },
+          { name: 'search', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: { '200': { description: 'Lista paginada' }, '403': { description: 'Prohibido' } },
+      },
+    },
+    '/users/{id}': {
+      get: {
+        tags: ['Users'],
+        summary: 'Ver un usuario (admin)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { '200': { description: 'Usuario' } },
+      },
+      patch: {
+        tags: ['Users'],
+        summary: 'Actualizar rol/estado/plan (admin)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { '200': { description: 'Actualizado' } },
+      },
     },
     '/models': {
       get: {
@@ -273,6 +308,35 @@ export const openapiSpec = {
         summary: 'Eliminar un chat',
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
         responses: { '200': { description: 'Eliminado' } },
+      },
+    },
+    '/chat': {
+      post: {
+        tags: ['AI'],
+        summary: 'Generar una respuesta de IA (alias de /chat/completions)',
+        description: 'Idéntico a POST /chat/completions. Mismo cuerpo y misma respuesta (JSON o SSE).',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['model', 'message'],
+                properties: {
+                  chatId: { type: 'string', format: 'uuid' },
+                  model: { type: 'string', example: 'ollamyn-pro' },
+                  message: { type: 'string', example: 'Hola' },
+                  stream: { type: 'boolean', default: false },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Respuesta generada (JSON) o flujo SSE' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+        },
       },
     },
     '/chat/completions': {
@@ -369,6 +433,12 @@ export const openapiSpec = {
           },
         },
         responses: { '200': { description: 'Actualizado' } },
+      },
+      delete: {
+        tags: ['Admin'],
+        summary: 'Eliminar (borrado lógico) un usuario (admin)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { '200': { description: 'Eliminado' } },
       },
     },
     '/admin/health': {

@@ -1,11 +1,12 @@
-import type { Env } from '../../../_lib/types';
-import { getDb } from '../../../_lib/db';
-import { ok, readJson } from '../../../_lib/response';
-import { conflict } from '../../../_lib/errors';
-import { hashPassword } from '../../../_lib/password';
-import { registerSchema, parse } from '../../../_lib/validation';
-import { issueTokens, mapUser } from '../../../_lib/session';
+import type { Env } from '../_lib/types';
+import { getDb } from '../_lib/db';
+import { ok, readJson } from '../_lib/response';
+import { conflict } from '../_lib/errors';
+import { hashPassword } from '../_lib/password';
+import { registerSchema, parse } from '../_lib/validation';
+import { issueTokens, mapUser } from '../_lib/session';
 
+/** POST /api/register */
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const body = parse(registerSchema, await readJson(request));
   const sql = getDb(env);

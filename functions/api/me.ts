@@ -1,11 +1,12 @@
-import type { Env } from '../../../_lib/types';
-import { getDb } from '../../../_lib/db';
-import { ok, readJson } from '../../../_lib/response';
-import { conflict } from '../../../_lib/errors';
-import { requireUser } from '../../../_lib/auth';
-import { updateProfileSchema, parse } from '../../../_lib/validation';
-import { mapUser } from '../../../_lib/session';
+import type { Env } from '../_lib/types';
+import { getDb } from '../_lib/db';
+import { ok, readJson } from '../_lib/response';
+import { conflict } from '../_lib/errors';
+import { requireUser } from '../_lib/auth';
+import { updateProfileSchema, parse } from '../_lib/validation';
+import { mapUser } from '../_lib/session';
 
+/** GET /api/me — perfil del usuario autenticado + resumen de uso. */
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const authed = await requireUser(env, request);
   const sql = getDb(env);
@@ -19,6 +20,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   return ok({ user: { ...mapUser(rows[0]), usage: usage[0] } });
 };
 
+/** PATCH /api/me — actualizar mi perfil. */
 export const onRequestPatch: PagesFunction<Env> = async ({ request, env }) => {
   const authed = await requireUser(env, request);
   const body = parse(updateProfileSchema, await readJson(request));
@@ -44,6 +46,7 @@ export const onRequestPatch: PagesFunction<Env> = async ({ request, env }) => {
   return ok({ user: mapUser(rows[0]) });
 };
 
+/** DELETE /api/me — eliminar mi cuenta (borrado lógico). */
 export const onRequestDelete: PagesFunction<Env> = async ({ request, env }) => {
   const authed = await requireUser(env, request);
   const sql = getDb(env);

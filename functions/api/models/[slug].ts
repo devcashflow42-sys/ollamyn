@@ -1,10 +1,10 @@
-import type { Env } from '../../../_lib/types';
-import { getDb } from '../../../_lib/db';
-import { ok } from '../../../_lib/response';
-import { notFound } from '../../../_lib/errors';
-import { requireUser } from '../../../_lib/auth';
+import type { Env } from '../../_lib/types';
+import { getDb } from '../../_lib/db';
+import { ok } from '../../_lib/response';
+import { notFound } from '../../_lib/errors';
+import { requireUser } from '../../_lib/auth';
 
-/** GET /api/v1/models/:slug — un modelo habilitado por slug. */
+/** GET /api/models/:slug — un modelo habilitado por su identificador (slug). */
 export const onRequestGet: PagesFunction<Env> = async ({ request, env, params }) => {
   await requireUser(env, request);
   const slug = String(params.slug);

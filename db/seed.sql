@@ -6,7 +6,7 @@
 --
 -- El usuario administrador NO se crea aquí (la contraseña se hashea en la API).
 -- Para tener un admin:
---   1) Regístrate normalmente:  POST /api/v1/auth/register
+--   1) Regístrate normalmente:  POST /api/register
 --   2) Promuévete a admin ejecutando en el SQL Editor de Neon:
 --        UPDATE users SET role='admin', plan='premium' WHERE email='TU_EMAIL';
 -- ============================================================================

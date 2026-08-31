@@ -40,6 +40,14 @@ export const updateChatSchema = z
   })
   .refine((d) => Object.keys(d).length > 0, { message: 'Nada que actualizar' });
 
+export const adminUpdateUserSchema = z
+  .object({
+    role: z.enum(['user', 'admin']).optional(),
+    status: z.enum(['active', 'suspended', 'deleted']).optional(),
+    plan: z.enum(['free', 'premium']).optional(),
+  })
+  .refine((d) => Object.keys(d).length > 0, { message: 'Debes proporcionar al menos un campo' });
+
 export const completionSchema = z.object({
   chatId: z.string().uuid().optional(),
   model: modelSlug,

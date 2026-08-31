@@ -1,22 +1,19 @@
-import type { Env } from '../../../_lib/types';
-import { getDb } from '../../../_lib/db';
-import { ok, readJson } from '../../../_lib/response';
-import { requireUser } from '../../../_lib/auth';
-import { completionSchema, parse } from '../../../_lib/validation';
-import {
-  enforceAiRateLimit,
-  prepareCompletion,
-  persistAssistant,
-  recordFailure,
-} from '../../../_lib/completion';
-import { aiGenerate, aiStream, estimateMessagesTokens, estimateTokens } from '../../../_lib/ai';
+import type { Env } from './types';
+import { getDb } from './db';
+import { ok, readJson } from './response';
+import { requireUser } from './auth';
+import { completionSchema, parse } from './validation';
+import { enforceAiRateLimit, prepareCompletion, persistAssistant, recordFailure } from './completion';
+import { aiGenerate, aiStream, estimateMessagesTokens, estimateTokens } from './ai';
+
+type Ctx = EventContext<Env, string, Record<string, unknown>>;
 
 /**
- * POST /api/v1/chat/completions
- * Autentica, aplica límite de uso, prepara el contexto, selecciona el proveedor
- * y genera la respuesta (JSON o streaming SSE), persistiendo mensajes y consumo.
+ * Handler compartido para POST /api/chat y POST /api/chat/completions.
+ * Autentica, aplica el límite de uso, prepara el contexto, selecciona el
+ * proveedor y responde en JSON o por streaming SSE, persistiendo el consumo.
  */
-export const onRequestPost: PagesFunction<Env> = async (context) => {
+export async function handleCompletion(context: Ctx): Promise<Response> {
   const { request, env } = context;
   const authed = await requireUser(env, request);
   const body = parse(completionSchema, await readJson(request));
@@ -91,7 +88,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       } catch (err) {
         const canceled = ac.signal.aborted;
         const latencyMs = Date.now() - startedAt;
-        // Persistencia garantizada aunque el cliente haya cerrado la conexión.
         context.waitUntil(
           (async () => {
             if (canceled && full) {
@@ -124,4 +120,4 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       'X-Accel-Buffering': 'no',
     },
   });
-};
+}

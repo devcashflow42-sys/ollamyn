@@ -1,7 +1,7 @@
 import type { AuthUser, Env } from './types';
 import { getDb } from './db';
 import { verifyAccessToken } from './jwt';
-import { ApiError, unauthorized } from './errors';
+import { ApiError, forbidden, unauthorized } from './errors';
 
 /**
  * Verifica el Bearer token, carga el usuario desde la base de datos y valida
@@ -26,6 +26,15 @@ export async function requireUser(env: Env, request: Request): Promise<AuthUser>
   }
   if (user.status === 'suspended') {
     throw new ApiError(403, 'ACCOUNT_SUSPENDED', 'Tu cuenta está suspendida');
+  }
+  return user;
+}
+
+/** Igual que requireUser, pero además exige rol de administrador. */
+export async function requireAdmin(env: Env, request: Request): Promise<AuthUser> {
+  const user = await requireUser(env, request);
+  if (user.role !== 'admin') {
+    throw forbidden('Se requieren privilegios de administrador');
   }
   return user;
 }

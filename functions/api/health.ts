@@ -1,7 +1,7 @@
-import type { Env } from './_lib/types';
-import { getDb } from './_lib/db';
+import type { Env } from '../_lib/types';
+import { getDb } from '../_lib/db';
 
-/** GET /health — liveness + comprobación de base de datos. */
+/** GET /api/health — liveness + comprobación de base de datos. */
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   let database = 'error';
   try {

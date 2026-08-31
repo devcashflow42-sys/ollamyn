@@ -1,11 +1,11 @@
-import type { Env } from '../../../_lib/types';
-import { getDb } from '../../../_lib/db';
-import { ok, readJson } from '../../../_lib/response';
-import { notFound } from '../../../_lib/errors';
-import { requireUser } from '../../../_lib/auth';
-import { updateChatSchema, parse, assertUuid } from '../../../_lib/validation';
+import type { Env } from '../../_lib/types';
+import { getDb } from '../../_lib/db';
+import { ok, readJson } from '../../_lib/response';
+import { notFound } from '../../_lib/errors';
+import { requireUser } from '../../_lib/auth';
+import { updateChatSchema, parse, assertUuid } from '../../_lib/validation';
 
-/** GET /api/v1/chats/:id — chat con sus mensajes. */
+/** GET /api/chats/:id — chat con sus mensajes. */
 export const onRequestGet: PagesFunction<Env> = async ({ request, env, params }) => {
   const authed = await requireUser(env, request);
   const id = assertUuid(String(params.id), 'CHAT_NOT_FOUND');
@@ -27,7 +27,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
   return ok({ chat: { ...chatRows[0], messages } });
 };
 
-/** PATCH /api/v1/chats/:id — actualizar título/modelo/archivado. */
+/** PATCH /api/chats/:id — actualizar título/modelo/archivado. */
 export const onRequestPatch: PagesFunction<Env> = async ({ request, env, params }) => {
   const authed = await requireUser(env, request);
   const id = assertUuid(String(params.id), 'CHAT_NOT_FOUND');
@@ -59,7 +59,7 @@ export const onRequestPatch: PagesFunction<Env> = async ({ request, env, params 
   return ok({ chat: rows[0] });
 };
 
-/** DELETE /api/v1/chats/:id — eliminar un chat. */
+/** DELETE /api/chats/:id — eliminar un chat. */
 export const onRequestDelete: PagesFunction<Env> = async ({ request, env, params }) => {
   const authed = await requireUser(env, request);
   const id = assertUuid(String(params.id), 'CHAT_NOT_FOUND');

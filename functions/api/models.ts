@@ -1,9 +1,9 @@
-import type { Env } from '../../_lib/types';
-import { getDb } from '../../_lib/db';
-import { ok } from '../../_lib/response';
-import { requireUser } from '../../_lib/auth';
+import type { Env } from '../_lib/types';
+import { getDb } from '../_lib/db';
+import { ok } from '../_lib/response';
+import { requireUser } from '../_lib/auth';
 
-/** GET /api/v1/models — modelos habilitados (sin exponer el proveedor real). */
+/** GET /api/models — modelos habilitados (sin exponer el proveedor real). */
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   await requireUser(env, request);
   const sql = getDb(env);

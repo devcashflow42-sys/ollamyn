@@ -92,7 +92,7 @@ Comprueba:
 1. Regístrate (desde tu web, Postman o con este `fetch` en la consola del navegador):
 
    ```js
-   fetch('https://<tu-proyecto>.pages.dev/api/v1/auth/register', {
+   fetch('https://<tu-proyecto>.pages.dev/api/register', {
      method: 'POST',
      headers: { 'Content-Type': 'application/json' },
      body: JSON.stringify({ username: 'admin', email: 'tu@email.com', password: 'TuPassword123' })
@@ -111,22 +111,25 @@ Comprueba:
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| POST | `/api/v1/auth/register` | Crear cuenta |
-| POST | `/api/v1/auth/login` | Iniciar sesión |
-| POST | `/api/v1/auth/refresh` | Renovar tokens |
-| GET | `/api/v1/auth/me` | Usuario actual |
-| GET/PATCH/DELETE | `/api/v1/users/me` | Perfil propio |
-| GET | `/api/v1/models` | Modelos disponibles |
-| GET | `/api/v1/models/:slug` | Un modelo |
-| GET/POST | `/api/v1/chats` | Listar / crear chats |
-| GET/PATCH/DELETE | `/api/v1/chats/:id` | Ver / editar / borrar chat |
-| POST | `/api/v1/chat/completions` | Hablar con la IA (streaming) |
-| GET | `/health` | Estado del servicio |
+| POST | `/api/register` | Crear cuenta |
+| POST | `/api/login` | Iniciar sesión |
+| POST | `/api/logout` | Cerrar sesión (revoca refresh token) |
+| POST | `/api/refresh` | Renovar tokens |
+| GET · PATCH · DELETE | `/api/me` | Perfil propio |
+| GET | `/api/users` · `/api/users/:id` | Usuarios (admin) |
+| GET | `/api/models` | Modelos disponibles |
+| GET | `/api/models/:slug` | Un modelo |
+| GET/POST | `/api/chats` | Listar / crear chats |
+| GET/PATCH/DELETE | `/api/chats/:id` | Ver / editar / borrar chat |
+| POST | `/api/chat` · `/api/chat/completions` | Hablar con la IA (streaming) |
+| GET · PATCH · DELETE | `/api/admin/users/:id` | Gestión de usuarios (admin) |
+| GET | `/api/health` | Estado del servicio |
+| GET | `/api/docs` | Referencia de la API |
 
 ### Ejemplo de streaming (Server-Sent Events)
 
 ```js
-const res = await fetch('https://<tu-proyecto>.pages.dev/api/v1/chat/completions', {
+const res = await fetch('https://<tu-proyecto>.pages.dev/api/chat/completions', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
   body: JSON.stringify({ model: 'ollamyn-local', message: 'Hola', stream: true }),

@@ -1,11 +1,11 @@
-import type { Env } from '../../_lib/types';
-import { getDb } from '../../_lib/db';
-import { ok, readJson } from '../../_lib/response';
-import { notFound } from '../../_lib/errors';
-import { requireUser } from '../../_lib/auth';
-import { createChatSchema, parse } from '../../_lib/validation';
+import type { Env } from '../_lib/types';
+import { getDb } from '../_lib/db';
+import { ok, readJson } from '../_lib/response';
+import { notFound } from '../_lib/errors';
+import { requireUser } from '../_lib/auth';
+import { createChatSchema, parse } from '../_lib/validation';
 
-/** GET /api/v1/chats — lista paginada de mis chats. */
+/** GET /api/chats — lista paginada de mis chats. */
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const authed = await requireUser(env, request);
   const url = new URL(request.url);
@@ -35,7 +35,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   });
 };
 
-/** POST /api/v1/chats — crear un chat. */
+/** POST /api/chats — crear un chat. */
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const authed = await requireUser(env, request);
   const body = parse(createChatSchema, await readJson(request));

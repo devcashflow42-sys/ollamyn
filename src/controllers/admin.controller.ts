@@ -28,6 +28,11 @@ export const adminController = {
     sendSuccess(res, { user });
   },
 
+  async deleteUser(req: Request, res: Response): Promise<void> {
+    const user = await userService.adminDeleteUser(req.params.id);
+    sendSuccess(res, { user });
+  },
+
   /** Health check ampliado: base de datos, Redis, proveedores, sistema. */
   async health(_req: Request, res: Response): Promise<void> {
     const [database, redis] = await Promise.all([

@@ -8,7 +8,7 @@ import { estimateMessagesTokens, estimateTokens } from '../utils/tokens';
 import { logger } from '../config/logger';
 
 /**
- * POST /api/v1/chat/completions
+ * POST /api/chat/completions  (y su alias POST /api/chat)
  *
  * Orquesta el flujo completo: autenticación (middleware), verificación de
  * modelo y límites (middleware), preparación de contexto, selección automática

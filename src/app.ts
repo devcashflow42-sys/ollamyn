@@ -68,15 +68,15 @@ export function createApp(): Application {
   // --- Archivos estáticos subidos (storage local de desarrollo) ---
   app.use('/uploads', express.static(env.fileStorageDir, { index: false, maxAge: '1h' }));
 
-  // --- Health check público ---
-  app.use('/health', healthRoutes);
+  // --- Health check (público, sin rate limit): GET /api/health ---
+  app.use('/api/health', healthRoutes);
 
-  // --- Documentación OpenAPI/Swagger ---
-  app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, { customSiteTitle: 'ollamyn API Docs' }));
-  app.get('/openapi.json', (_req, res) => res.json(openapiSpec));
+  // --- Documentación OpenAPI/Swagger: /api/docs ---
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, { customSiteTitle: 'ollamyn API Docs' }));
+  app.get('/api/openapi.json', (_req, res) => res.json(openapiSpec));
 
-  // --- API v1 (con rate limit global anti-abuso) ---
-  app.use('/api/v1', globalRateLimit, apiRouter);
+  // --- API (con rate limit global anti-abuso): /api/... ---
+  app.use('/api', globalRateLimit, apiRouter);
 
   // --- 404 y manejo global de errores (siempre al final) ---
   app.use(notFoundHandler);

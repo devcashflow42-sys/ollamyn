@@ -211,7 +211,7 @@ fly open            # abre https://<tu-app>.fly.dev
 fly logs            # ver logs en vivo
 ```
 
-La app queda en `https://<tu-app>.fly.dev/api/v1/`. Para tu propio dominio:
+La app queda en `https://<tu-app>.fly.dev/api/`. Para tu propio dominio:
 `fly certs add api.ollamyn.com` y apunta el DNS según las instrucciones.
 
 ---
@@ -240,39 +240,39 @@ importantes:
 
 ---
 
-## Endpoints principales (`/api/v1`)
+## Endpoints principales (base `/api`, sin versión)
 
-**Autenticación**
-- `POST /auth/register` · `POST /auth/login` · `POST /auth/refresh` · `POST /auth/logout` · `GET /auth/me`
+**Autenticación** *(rutas planas, sin `/auth`)*
+- `POST /api/register` · `POST /api/login` · `POST /api/logout` · `POST /api/refresh`
 
-**Usuarios**
-- `GET /users/me` · `PATCH /users/me` · `POST /users/me/password` · `DELETE /users/me`
+**Perfil propio**
+- `GET /api/me` · `PATCH /api/me` · `DELETE /api/me` · `POST /api/me/password`
+
+**Usuarios** *(rol `admin`)*
+- `GET /api/users` · `GET /api/users/:id` · `PATCH /api/users/:id`
 
 **Administración** *(rol `admin`)*
-- `GET /admin/users` · `GET /admin/users/:id` · `PATCH /admin/users/:id` · `GET /admin/health`
+- `GET /api/admin/users` · `GET|PATCH|DELETE /api/admin/users/:id` · `GET /api/admin/health`
 
 **Modelos de IA**
-- `GET /models` · `GET /models/:slug` *(solo modelos habilitados)*
+- `GET /api/models` · `GET /api/models/:slug` *(solo modelos habilitados)*
 
 **Chats**
-- `POST /chats` · `GET /chats` · `GET /chats/:id` · `PATCH /chats/:id` · `DELETE /chats/:id`
+- `POST /api/chats` · `GET /api/chats` · `GET /api/chats/:id` · `PATCH /api/chats/:id` · `DELETE /api/chats/:id`
 
 **Mensajes e IA**
-- `POST /chat/completions` — ruta principal (streaming opcional)
+- `POST /api/chat` · `POST /api/chat/completions` — generación (streaming opcional)
 
 **Archivos**
-- `POST /files` · `GET /files` · `GET /files/:id` · `DELETE /files/:id`
+- `POST /api/files` · `GET /api/files` · `GET /api/files/:id` · `DELETE /api/files/:id`
 
-**Salud**
-- `GET /health` (público) · `GET /api/v1/admin/health` (detallado)
-
-**Documentación**
-- `GET /docs` (Swagger UI) · `GET /openapi.json`
+**Salud y documentación**
+- `GET /api/health` · `GET /api/admin/health` (detallado) · `GET /api/docs` (Swagger UI) · `GET /api/openapi.json`
 
 ### Ejemplo: generar respuesta con streaming
 
 ```bash
-curl -N -X POST http://localhost:3000/api/v1/chat/completions \
+curl -N -X POST http://localhost:3000/api/chat/completions \
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"model":"ollamyn-local","message":"Explícame cómo funciona PostgreSQL","stream":true}'
@@ -357,5 +357,5 @@ inferencia. Añadir un proveedor nuevo se reduce a implementar `AIProvider` y
 registrarlo en `provider.registry.ts`.
 
 El objetivo final: que las apps de ollamyn solo necesiten hablar con una API
-estable como `https://api.ollamyn.com/api/v1/`, sin importar qué modelo o
+estable como `https://api.ollamyn.com/api/`, sin importar qué modelo o
 proveedor se utilice internamente.
