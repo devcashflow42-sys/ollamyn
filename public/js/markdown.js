@@ -9,6 +9,8 @@
 (function () {
   'use strict';
 
+  var ICON_COPY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
   function safeUrl(u) {
     var url = (u || '').trim();
     return /^(https?:\/\/|mailto:)/i.test(url) ? url : null;
@@ -84,12 +86,38 @@
         var closer = new RegExp('^\\s*\\' + ch + '{' + len + ',}\\s*$');
         while (i < lines.length && !closer.test(lines[i])) { buf.push(lines[i]); i++; }
         if (i < lines.length) i++; // salta el cierre
+        // Contenedor con cabecera (lenguaje + botón Copiar) y el código.
+        var block = document.createElement('div');
+        block.className = 'code-block';
+
+        var head = document.createElement('div');
+        head.className = 'code-head';
+        var langEl = document.createElement('span');
+        langEl.className = 'code-lang';
+        langEl.textContent = lang ? lang.slice(0, 24) : 'código';
+        var copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'code-copy';
+        var ico = document.createElement('span');
+        ico.className = 'ico';
+        ico.innerHTML = ICON_COPY; // icono estático (sin datos de la IA): seguro
+        var lbl = document.createElement('span');
+        lbl.className = 'label';
+        lbl.textContent = 'Copiar';
+        copyBtn.appendChild(ico);
+        copyBtn.appendChild(lbl);
+        head.appendChild(langEl);
+        head.appendChild(copyBtn);
+
         var pre = document.createElement('pre');
         var codeEl = document.createElement('code');
         if (lang) codeEl.setAttribute('data-lang', lang.slice(0, 24));
         codeEl.textContent = buf.join('\n');
         pre.appendChild(codeEl);
-        frag.appendChild(pre);
+
+        block.appendChild(head);
+        block.appendChild(pre);
+        frag.appendChild(block);
         continue;
       }
 

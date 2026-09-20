@@ -52,6 +52,7 @@
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.form.requestSubmit(); }
     });
     el.messages.addEventListener('scroll', onScroll);
+    el.messages.addEventListener('click', onCodeCopy); // botón Copiar de los bloques de código
     el.scrollDown.addEventListener('click', function () { scrollToBottom(true); el.textarea.focus(); });
 
     // Selector de modelo
@@ -363,6 +364,51 @@
     var m = el.messages;
     var canScroll = m.scrollHeight - m.clientHeight > 40;
     el.scrollDown.hidden = state.pinned || !canScroll;
+  }
+
+  // ---------------------- Copiar código -----------------------------
+  function onCodeCopy(e) {
+    var btn = e.target.closest ? e.target.closest('.code-copy') : null;
+    if (!btn) return;
+    var block = btn.closest('.code-block');
+    var code = block && block.querySelector('pre code');
+    if (!code) return;
+    copyText(code.textContent).then(function (ok) { showCopied(btn, ok); });
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallbackCopy(text); });
+    }
+    return Promise.resolve(fallbackCopy(text));
+  }
+
+  function fallbackCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) { return false; }
+  }
+
+  function showCopied(btn, ok) {
+    var label = btn.querySelector('.label');
+    if (!label) return;
+    label.textContent = ok ? '¡Copiado!' : 'Error';
+    btn.classList.toggle('copied', ok);
+    if (btn._t) clearTimeout(btn._t);
+    btn._t = setTimeout(function () {
+      var l = btn.querySelector('.label');
+      if (l) l.textContent = 'Copiar';
+      btn.classList.remove('copied');
+    }, 1600);
   }
 
   // ---------------------- Varios -----------------------------------
