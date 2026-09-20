@@ -235,13 +235,22 @@
 
     var assistant = appendMessage('assistant', '');
     var contentNode = assistant.querySelector('.content');
-    var cursor = document.createElement('span');
-    cursor.className = 'cursor';
-    contentNode.appendChild(cursor);
+    setContent(contentNode, 'assistant', '', true);
 
     setStreaming(true);
     var acc = '';
     var isNew = !state.chatId;
+    var rafPending = false;
+
+    function renderStream() {
+      setContent(contentNode, 'assistant', acc, true);
+      scrollToBottom(); // solo baja si el usuario está al final
+    }
+    function scheduleStream() {
+      if (rafPending) return;
+      rafPending = true;
+      requestAnimationFrame(function () { rafPending = false; renderStream(); });
+    }
 
     OllamynAPI.streamCompletion({
       chatId: state.chatId || undefined,
@@ -255,29 +264,24 @@
       },
       onDelta: function (delta) {
         acc += delta;
-        contentNode.textContent = acc;
-        contentNode.appendChild(cursor);
-        scrollToBottom(); // solo baja si el usuario está al final
+        scheduleStream();
       },
-      onDone: function () { finishStreaming(contentNode, cursor, acc, isNew); },
+      onDone: function () {
+        setContent(contentNode, 'assistant', acc, false); // render final sin cursor
+        setStreaming(false);
+        scrollToBottom();
+        if (isNew) refreshChats();
+        el.textarea.focus();
+      },
     }).catch(function (err) {
-      cursor.remove();
       if (err.status === 401) return doLogout(true);
-      contentNode.textContent = acc || '';
+      setContent(contentNode, 'assistant', acc, false);
       var note = document.createElement('div');
       note.className = 'hint error';
       note.textContent = '⚠ ' + friendly(err);
       contentNode.appendChild(note);
       setStreaming(false);
     });
-  }
-
-  function finishStreaming(contentNode, cursor, acc, isNew) {
-    cursor.remove();
-    contentNode.textContent = acc;
-    setStreaming(false);
-    if (isNew) refreshChats();
-    el.textarea.focus();
   }
 
   function setStreaming(on) {
@@ -304,13 +308,31 @@
     name.textContent = role === 'user' ? 'Tú' : 'ollamyn';
     var c = document.createElement('div');
     c.className = 'content';
-    c.textContent = content || '';
+    setContent(c, role, content || '', false);
     body.appendChild(name); body.appendChild(c);
     msg.appendChild(body);
 
     el.messages.appendChild(msg);
     updateScrollButton();
     return msg;
+  }
+
+  /**
+   * Pinta el contenido de un mensaje. Los mensajes del asistente se renderizan
+   * como Markdown (seguro, vía renderMarkdown); los del usuario como texto plano.
+   */
+  function setContent(node, role, text, streaming) {
+    if (role === 'user' || !window.renderMarkdown) {
+      node.textContent = text || '';
+      return;
+    }
+    node.innerHTML = '';
+    node.appendChild(window.renderMarkdown(text || ''));
+    if (streaming) {
+      var cur = document.createElement('span');
+      cur.className = 'cursor';
+      node.appendChild(cur);
+    }
   }
 
   function renderEmpty() {

@@ -390,9 +390,61 @@ a:hover { text-decoration: underline; }
 .msg.assistant .who { background: var(--accent); }
 .msg .body { min-width: 0; flex: 1; }
 .msg .name { font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: .2rem; }
-.msg .content { white-space: pre-wrap; word-wrap: break-word; overflow-wrap: anywhere; }
+.msg .content { word-wrap: break-word; overflow-wrap: anywhere; }
+.msg.user .content { white-space: pre-wrap; } /* respeta los saltos de línea del usuario */
 .msg .content .cursor { display: inline-block; width: 7px; height: 1.05em; background: var(--accent); vertical-align: text-bottom; margin-left: 1px; animation: blink 1s steps(2) infinite; border-radius: 1px; }
 @keyframes blink { 50% { opacity: 0; } }
+
+/* --- Markdown en las respuestas de la IA --- */
+.msg.assistant .content > :first-child { margin-top: 0; }
+.msg.assistant .content > :last-child { margin-bottom: 0; }
+.msg.assistant .content p { margin: 0 0 .75em; }
+.msg.assistant .content h1,
+.msg.assistant .content h2,
+.msg.assistant .content h3,
+.msg.assistant .content h4 { margin: 1em 0 .45em; line-height: 1.25; font-weight: 650; letter-spacing: -0.01em; }
+.msg.assistant .content h1 { font-size: 1.4em; }
+.msg.assistant .content h2 { font-size: 1.25em; }
+.msg.assistant .content h3 { font-size: 1.1em; }
+.msg.assistant .content h4 { font-size: 1em; }
+.msg.assistant .content ul,
+.msg.assistant .content ol { margin: .3em 0 .8em; padding-left: 1.4em; }
+.msg.assistant .content li { margin: .25em 0; }
+.msg.assistant .content li > ul,
+.msg.assistant .content li > ol { margin: .2em 0; }
+.msg.assistant .content a { color: var(--accent); text-decoration: underline; }
+.msg.assistant .content strong { font-weight: 650; }
+.msg.assistant .content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: .88em;
+  background: var(--surface-2);
+  padding: .12em .38em;
+  border-radius: 6px;
+}
+.msg.assistant .content pre {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: .85rem 1rem;
+  overflow-x: auto;
+  margin: .5em 0 .9em;
+}
+.msg.assistant .content pre code {
+  background: none;
+  padding: 0;
+  font-size: .86em;
+  line-height: 1.55;
+  white-space: pre;
+}
+.msg.assistant .content blockquote {
+  margin: .5em 0 .8em;
+  padding: .2em 0 .2em .9em;
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+}
+.msg.assistant .content hr { border: none; border-top: 1px solid var(--border); margin: 1em 0; }
+/* barra de scroll fina en los bloques de código */
+.msg.assistant .content pre::-webkit-scrollbar { height: 8px; }
+.msg.assistant .content pre::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
 
 /* Estado vacío */
 .empty {
