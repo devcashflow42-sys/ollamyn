@@ -22,6 +22,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         Nuevo chat
       </button>
+      <div class="section-label" id="recientes-label" hidden>Recientes</div>
       <div class="chat-list" id="chat-list"></div>
       <div class="sidebar-foot">
         <div class="user-chip" id="logout-btn" title="Cerrar sesión">
@@ -38,10 +39,24 @@
         <button class="icon-btn menu-btn" id="menu-btn" aria-label="Menú">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
         </button>
-        <select class="model-select" id="model-select" aria-label="Modelo"></select>
+
+        <!-- Selector de modelo personalizado -->
+        <div class="model-picker" id="model-picker">
+          <button class="model-btn" id="model-btn" aria-haspopup="listbox" aria-expanded="false">
+            <span class="dot-status" id="model-btn-dot"></span>
+            <span id="model-btn-label">Modelo</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="model-menu" id="model-menu" role="listbox" hidden></div>
+        </div>
       </div>
 
       <div class="messages" id="messages"></div>
+
+      <!-- Botón flotante: ir al final -->
+      <button class="scroll-down" id="scroll-down" aria-label="Ir al final" hidden>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+      </button>
 
       <div class="composer">
         <form class="composer-inner" id="composer-form">

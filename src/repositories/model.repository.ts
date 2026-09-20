@@ -31,6 +31,15 @@ export const modelRepository = {
     });
   },
 
+  /** Modelos habilitados incluyendo el proveedor (para calcular disponibilidad). */
+  listEnabledWithProvider() {
+    return prisma.aiModel.findMany({
+      where: { enabled: true },
+      select: { ...publicModelSelect, provider: true },
+      orderBy: { name: 'asc' },
+    });
+  },
+
   /** Todos los modelos (uso administrativo). */
   listAll() {
     return prisma.aiModel.findMany({ orderBy: { name: 'asc' } });

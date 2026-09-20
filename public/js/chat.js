@@ -3,8 +3,10 @@
    - Protegida: sin token válido redirige a /login.
    - El ID del usuario NUNCA va en la URL. En el hash solo va el UUID del chat,
      que es aleatorio y el servidor valida su propiedad por el token.
-   - Streaming en tiempo real. Todo el contenido dinámico se pinta con
-     textContent (sin innerHTML) para evitar XSS.
+   - Streaming en tiempo real. Contenido dinámico con textContent (sin innerHTML).
+   - Selector de modelo tipo Claude (muestra el motor y si está disponible).
+   - Auto-scroll estilo ChatGPT: solo baja si el usuario está al final; si sube
+     a leer, deja de bajar y muestra la flecha para volver abajo.
    ============================================================================ */
 (function () {
   'use strict';
@@ -14,7 +16,7 @@
     return;
   }
 
-  var state = { chatId: null, model: null, streaming: false, chats: [] };
+  var state = { chatId: null, model: null, models: [], streaming: false, chats: [], pinned: true };
   var el = {};
 
   document.addEventListener('DOMContentLoaded', init);
@@ -25,11 +27,17 @@
     el.menuBtn = document.getElementById('menu-btn');
     el.newChat = document.getElementById('new-chat');
     el.chatList = document.getElementById('chat-list');
+    el.recientes = document.getElementById('recientes-label');
     el.userName = document.getElementById('user-name');
     el.avatar = document.getElementById('avatar');
     el.logout = document.getElementById('logout-btn');
-    el.modelSelect = document.getElementById('model-select');
+    el.modelPicker = document.getElementById('model-picker');
+    el.modelBtn = document.getElementById('model-btn');
+    el.modelBtnLabel = document.getElementById('model-btn-label');
+    el.modelBtnDot = document.getElementById('model-btn-dot');
+    el.modelMenu = document.getElementById('model-menu');
     el.messages = document.getElementById('messages');
+    el.scrollDown = document.getElementById('scroll-down');
     el.form = document.getElementById('composer-form');
     el.textarea = document.getElementById('composer-input');
     el.send = document.getElementById('send-btn');
@@ -38,20 +46,27 @@
     el.scrim.addEventListener('click', function () { toggleSidebar(false); });
     el.newChat.addEventListener('click', function () { startNewChat(); closeSidebarMobile(); });
     el.logout.addEventListener('click', doLogout);
-    el.modelSelect.addEventListener('change', function () {
-      state.model = el.modelSelect.value;
-      try { localStorage.setItem('ollamyn_model', state.model); } catch (e) {}
-    });
     el.form.addEventListener('submit', onSend);
     el.textarea.addEventListener('input', autoGrow);
     el.textarea.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.form.requestSubmit(); }
     });
+    el.messages.addEventListener('scroll', onScroll);
+    el.scrollDown.addEventListener('click', function () { scrollToBottom(true); el.textarea.focus(); });
+
+    // Selector de modelo
+    el.modelBtn.addEventListener('click', function (e) { e.stopPropagation(); toggleModelMenu(); });
+    document.addEventListener('click', function () { closeModelMenu(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModelMenu(); });
+
     window.addEventListener('hashchange', function () {
       var id = location.hash.replace(/^#/, '');
       if (id && id !== state.chatId) openChat(id);
       if (!id) startNewChat(true);
     });
+
+    // En móvil la barra lateral empieza cerrada (no debe tapar el chat).
+    if (window.matchMedia('(max-width: 760px)').matches) el.sidebar.classList.add('hidden');
 
     bootstrap();
   }
@@ -61,23 +76,19 @@
       var u = data.user;
       el.userName.textContent = u.username || u.email;
       el.avatar.textContent = (u.username || u.email || '?').slice(0, 1);
-    }).catch(function (err) {
-      if (err.status === 401) return doLogout(true);
-    });
+    }).catch(function (err) { if (err.status === 401) return doLogout(true); });
 
     OllamynAPI.models().then(function (models) {
-      el.modelSelect.innerHTML = '';
+      state.models = models || [];
       var saved = null;
       try { saved = localStorage.getItem('ollamyn_model'); } catch (e) {}
-      models.forEach(function (m) {
-        var opt = document.createElement('option');
-        opt.value = m.slug; opt.textContent = m.name;
-        el.modelSelect.appendChild(opt);
-      });
-      if (models.length) {
-        state.model = (saved && models.some(function (m) { return m.slug === saved; })) ? saved : models[0].slug;
-        el.modelSelect.value = state.model;
-      }
+      var pick = state.models.filter(function (m) { return m.available; });
+      var chosen = null;
+      if (saved && state.models.some(function (m) { return m.slug === saved && m.available; })) chosen = saved;
+      else if (pick.length) chosen = pick[0].slug;
+      else if (state.models.length) chosen = state.models[0].slug;
+      setModel(chosen);
+      renderModelMenu();
     }).catch(function () {});
 
     refreshChats().then(function () {
@@ -86,15 +97,80 @@
     });
   }
 
+  // ---------------------- Selector de modelo -----------------------
+  function setModel(slug) {
+    var m = state.models.find(function (x) { return x.slug === slug; });
+    state.model = slug;
+    if (m) {
+      el.modelBtnLabel.textContent = m.name;
+      el.modelBtnDot.classList.toggle('off', !m.available);
+    }
+    try { if (slug) localStorage.setItem('ollamyn_model', slug); } catch (e) {}
+  }
+
+  function renderModelMenu() {
+    el.modelMenu.innerHTML = '';
+    state.models.forEach(function (m) {
+      var opt = document.createElement('button');
+      opt.type = 'button';
+      opt.className = 'model-option' + (m.slug === state.model ? ' selected' : '') + (m.available ? '' : ' disabled');
+      opt.setAttribute('role', 'option');
+
+      var dot = document.createElement('span');
+      dot.className = 'dot-status' + (m.available ? '' : ' off');
+      opt.appendChild(dot);
+
+      var info = document.createElement('span');
+      info.className = 'info';
+      var n = document.createElement('span'); n.className = 'n';
+      var nm = document.createElement('span'); nm.textContent = m.name; n.appendChild(nm);
+      if (m.engine) { var eg = document.createElement('span'); eg.className = 'engine'; eg.textContent = m.engine; n.appendChild(eg); }
+      var d = document.createElement('span'); d.className = 'd'; d.textContent = m.description || '';
+      info.appendChild(n); info.appendChild(d);
+      opt.appendChild(info);
+
+      if (!m.available) {
+        var off = document.createElement('span'); off.className = 'badge-off'; off.textContent = 'No configurado';
+        opt.appendChild(off);
+      } else {
+        var chk = document.createElement('span'); chk.className = 'check';
+        chk.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+        opt.appendChild(chk);
+      }
+
+      if (m.available) {
+        opt.addEventListener('click', function (e) {
+          e.stopPropagation();
+          setModel(m.slug); renderModelMenu(); closeModelMenu();
+        });
+      } else {
+        opt.addEventListener('click', function (e) { e.stopPropagation(); });
+      }
+      el.modelMenu.appendChild(opt);
+    });
+  }
+
+  function toggleModelMenu() {
+    var open = !el.modelMenu.hasAttribute('hidden');
+    if (open) closeModelMenu(); else openModelMenu();
+  }
+  function openModelMenu() { el.modelMenu.removeAttribute('hidden'); el.modelBtn.setAttribute('aria-expanded', 'true'); }
+  function closeModelMenu() { el.modelMenu.setAttribute('hidden', ''); el.modelBtn.setAttribute('aria-expanded', 'false'); }
+
+  // ---------------------- Conversaciones ---------------------------
   function refreshChats() {
     return OllamynAPI.chats().then(function (chats) {
       state.chats = chats || [];
       renderChatList();
-    }).catch(function () {});
+    }).catch(function (err) {
+      if (err && err.status === 401) return doLogout(true);
+      renderChatList();
+    });
   }
 
   function renderChatList() {
     el.chatList.innerHTML = '';
+    el.recientes.hidden = state.chats.length === 0;
     state.chats.forEach(function (c) {
       var item = document.createElement('div');
       item.className = 'chat-item' + (c.id === state.chatId ? ' active' : '');
@@ -133,7 +209,7 @@
       scrollToBottom(true);
     }).catch(function (err) {
       if (err.status === 401) return doLogout(true);
-      startNewChat(); // chat inexistente/ajeno → vuelve a estado limpio
+      startNewChat();
     });
   }
 
@@ -145,7 +221,7 @@
     }).catch(function () {});
   }
 
-  // --- Envío de mensajes con streaming ---
+  // ---------------------- Envío + streaming ------------------------
   function onSend(e) {
     e.preventDefault();
     if (state.streaming) return;
@@ -181,7 +257,7 @@
         acc += delta;
         contentNode.textContent = acc;
         contentNode.appendChild(cursor);
-        scrollToBottom();
+        scrollToBottom(); // solo baja si el usuario está al final
       },
       onDone: function () { finishStreaming(contentNode, cursor, acc, isNew); },
     }).catch(function (err) {
@@ -200,18 +276,18 @@
     cursor.remove();
     contentNode.textContent = acc;
     setStreaming(false);
-    if (isNew) refreshChats(); // el nuevo chat aparece en la barra lateral con su título
+    if (isNew) refreshChats();
     el.textarea.focus();
   }
 
   function setStreaming(on) {
     state.streaming = on;
-    el.send.disabled = on;
+    el.send.disabled = on || !el.textarea.value.trim();
     el.textarea.disabled = on;
     if (!on) el.textarea.focus();
   }
 
-  // --- Render de mensajes (seguro: textContent) ---
+  // ---------------------- Render de mensajes -----------------------
   function appendMessage(role, content) {
     var msg = document.createElement('div');
     msg.className = 'msg ' + (role === 'user' ? 'user' : 'assistant');
@@ -233,6 +309,7 @@
     msg.appendChild(body);
 
     el.messages.appendChild(msg);
+    updateScrollButton();
     return msg;
   }
 
@@ -240,18 +317,33 @@
     el.messages.innerHTML =
       '<div class="empty"><div class="brand"><span class="dot"></span> ollamyn</div>' +
       '<p>¿En qué puedo ayudarte hoy?</p></div>';
+    updateScrollButton();
   }
   function clearEmpty() {
-    var e = el.messages.querySelector('.empty');
-    if (e) el.messages.innerHTML = '';
+    if (el.messages.querySelector('.empty')) el.messages.innerHTML = '';
   }
 
-  function scrollToBottom(force) {
+  // ---------------------- Scroll (estilo ChatGPT) ------------------
+  function distanceFromBottom() {
     var m = el.messages;
-    var near = m.scrollHeight - m.scrollTop - m.clientHeight < 160;
-    if (force || near) m.scrollTop = m.scrollHeight;
+    return m.scrollHeight - m.scrollTop - m.clientHeight;
+  }
+  function onScroll() {
+    state.pinned = distanceFromBottom() < 80;
+    updateScrollButton();
+  }
+  function scrollToBottom(force) {
+    if (force) state.pinned = true;
+    if (state.pinned) el.messages.scrollTop = el.messages.scrollHeight;
+    updateScrollButton();
+  }
+  function updateScrollButton() {
+    var m = el.messages;
+    var canScroll = m.scrollHeight - m.clientHeight > 40;
+    el.scrollDown.hidden = state.pinned || !canScroll;
   }
 
+  // ---------------------- Varios -----------------------------------
   function autoGrow() {
     el.textarea.style.height = 'auto';
     el.textarea.style.height = Math.min(el.textarea.scrollHeight, 200) + 'px';
@@ -267,9 +359,8 @@
     if (window.matchMedia('(max-width: 760px)').matches) toggleSidebar(false);
   }
 
-  function doLogout(silent) {
+  function doLogout() {
     OllamynAPI.logout().finally(function () { location.replace('/login'); });
-    if (silent) return;
   }
 
   function friendly(err) {
