@@ -27,7 +27,6 @@
     el.menuBtn = document.getElementById('menu-btn');
     el.newChat = document.getElementById('new-chat');
     el.chatList = document.getElementById('chat-list');
-    el.recientes = document.getElementById('recientes-label');
     el.userName = document.getElementById('user-name');
     el.avatar = document.getElementById('avatar');
     el.logout = document.getElementById('logout-btn');
@@ -169,10 +168,33 @@
     });
   }
 
+  // Agrupa por fecha de última actividad, como Claude.
+  function startOfDay(ms) { var x = new Date(ms); x.setHours(0, 0, 0, 0); return x.getTime(); }
+  function bucketOf(dateStr, today0) {
+    var t = new Date(dateStr).getTime();
+    if (!t || isNaN(t)) return 'Anteriores';
+    var days = Math.round((today0 - startOfDay(t)) / 86400000);
+    if (days <= 0) return 'Hoy';
+    if (days === 1) return 'Ayer';
+    if (days <= 7) return 'Últimos 7 días';
+    if (days <= 30) return 'Últimos 30 días';
+    return 'Anteriores';
+  }
+
   function renderChatList() {
     el.chatList.innerHTML = '';
-    el.recientes.hidden = state.chats.length === 0;
+    var today0 = startOfDay(Date.now());
+    var lastBucket = null;
     state.chats.forEach(function (c) {
+      var bucket = bucketOf(c.updatedAt || c.createdAt, today0);
+      if (bucket !== lastBucket) {
+        var header = document.createElement('div');
+        header.className = 'section-label';
+        header.textContent = bucket;
+        el.chatList.appendChild(header);
+        lastBucket = bucket;
+      }
+
       var item = document.createElement('div');
       item.className = 'chat-item' + (c.id === state.chatId ? ' active' : '');
 

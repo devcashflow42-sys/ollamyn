@@ -295,11 +295,12 @@ a:hover { text-decoration: underline; }
 /* Main */
 .main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg); position: relative; }
 
-/* Etiqueta de sección en la barra lateral (Recientes) */
+/* Encabezado de grupo de chats por fecha (Hoy / Ayer / Anteriores...) */
 .section-label {
   font-size: .72rem; font-weight: 650; text-transform: uppercase; letter-spacing: .04em;
   color: var(--muted); padding: .9rem .6rem .35rem;
 }
+.chat-list .section-label:first-child { padding-top: .25rem; }
 
 /* --- Selector de modelo personalizado (estilo Claude) --- */
 .model-picker { position: relative; }
