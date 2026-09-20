@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ollamyn · Chat</title>
+  <meta name="robots" content="noindex" />
+  <script>try{var t=localStorage.getItem('ollamyn_theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="chat-layout">
+    <!-- Barra lateral -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <a class="brand" href="/"><span class="dot"></span> ollamyn</a>
+        <button class="theme-toggle" style="position:static" aria-label="Cambiar tema"></button>
+      </div>
+      <button class="btn new-chat" id="new-chat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Nuevo chat
+      </button>
+      <div class="chat-list" id="chat-list"></div>
+      <div class="sidebar-foot">
+        <div class="user-chip" id="logout-btn" title="Cerrar sesión">
+          <span class="avatar" id="avatar">?</span>
+          <span class="uname" id="user-name">…</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Panel principal -->
+    <main class="main">
+      <div class="topbar">
+        <button class="icon-btn menu-btn" id="menu-btn" aria-label="Menú">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+        <select class="model-select" id="model-select" aria-label="Modelo"></select>
+      </div>
+
+      <div class="messages" id="messages"></div>
+
+      <div class="composer">
+        <form class="composer-inner" id="composer-form">
+          <textarea id="composer-input" rows="1" placeholder="Escribe tu mensaje…" autofocus></textarea>
+          <button class="send-btn" id="send-btn" type="submit" aria-label="Enviar" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          </button>
+        </form>
+        <p class="composer-note">ollamyn puede cometer errores. Verifica la información importante.</p>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/chat.js"></script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

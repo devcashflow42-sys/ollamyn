@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import path from 'node:path';
 import express, { type Application } from 'express';
 import helmet from 'helmet';
 import cors, { type CorsOptions } from 'cors';
@@ -77,6 +78,11 @@ export function createApp(): Application {
 
   // --- API (con rate limit global anti-abuso): /api/... ---
   app.use('/api', globalRateLimit, apiRouter);
+
+  // --- Frontend estático (public/): sirve la web en el mismo origen que la API,
+  //     igual que en Cloudflare Pages. `extensions: ['html']` permite /login y /chat. ---
+  const publicDir = path.resolve(process.cwd(), 'public');
+  app.use(express.static(publicDir, { extensions: ['html'], index: 'index.html', maxAge: '1h' }));
 
   // --- 404 y manejo global de errores (siempre al final) ---
   app.use(notFoundHandler);
